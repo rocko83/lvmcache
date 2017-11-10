@@ -1,8 +1,18 @@
-#!/bin/bash
+#!/bin/bash -x
 export tempo=1
 export VGNAME=ubuntu-vg
 export LVNAME=damatoluks
-export LOOPDEVICE=/dev/loop0
+function looplivre() {
+	seq 1 100 | \
+	while read valor
+	do
+		retorno=$(losetup -a | grep -w /dev/loop$valor| wc -l)
+		if [ $retorno -eq 0 ]
+			then echo /dev/loop$valor
+			break
+		fi
+	done
+}
 function criar() {
 	temporario=$(mktemp -d)
 	mount -t tmpfs -o size=$1m tmpfs $temporario
@@ -36,9 +46,11 @@ if [ $# -eq 2 ]
 then
 	case $1 in
 		criar)
+			export LOOPDEVICE=$(looplivre)
 			criar $2
 			;;	
 		apagar)
+			export LOOPDEVICE=$(losetup -a | grep $2 | awk -F : '{print $1}')
 			apagar $2
 			;;	
 		*)
